@@ -1,56 +1,73 @@
 import mysql.connector
 from mysql.connector import Error
+from PyQt5.QtCore import QRunnable
 
-class SQLConnector:
-    def __init__(self, host: str="localhost", user: str="root", password: str="admin", database: str="hotel_reservation"):
-        self._host = host
-        self._user = user
-        self._password = password
-        self._database = database
+class SQLConnector(QRunnable):
+    def __init__(self, method: str= "run", parameters: dict={}):
+        """ connection to database can only be modify here """
+        self.__host= "localhost"
+        self.__user= "root"
+        self.__passwd= "admin"
+        self.__database= "hotel_reservation"
         
-        self.connection = None
+        
+        self.parameters = parameters # expected parameter of every method
+        self.method = method # method to run
+        
+        self.__connection = None
 
-    def connect(self):
+    def run(self):
+        print("you are caliing the default run.\ndid you perhaps forgot to especify the method to run?")
+    
+    def __connect_db(self) -> None:
         """Establish a connection to the database."""
         try:
             print("try to connect")
-            self.connection = mysql.connector.connect(
-                host=self._host,
-                user=self._user,
-                passwd=self._password,
-                database=self._database
+            self.__connection = mysql.connector.connect(
+                host= self.__host,
+                user= self.__user,
+                passwd= self.__passwd,
+                database= self.__database
             )
-            if self.connection.is_connected():
+            if self.__connection.is_connected():
                 print("Connection to the database was successful.")
         except Error as e:
             print(f"Error while connecting to the database: {e}")
-
-    def execute_query(self, query, params=None):
+            
+    def __disconnect_db(self) -> None:
+        """Close the database connection."""
+        if self.__connection is not None and self.__connection.is_connected():
+            self.__connection.close()
+            print("Database connection closed.")
+    
+    def execute_query(self, sql: str, value) -> None:
         """Execute a single query (INSERT, UPDATE, DELETE)."""
-        if self.connection is None or not self.connection.is_connected():
+        
+        if self.__connection is None or not self.__connection.is_connected():
             print("Connection is not established.")
             return
 
-        cursor = self.connection.cursor()
+        cursor = self.__connection.cursor()
         try:
-            cursor.execute(query, params)
-            self.connection.commit()
+            cursor.execute(sql, value)
+            self.__connection.commit()
             print("Query executed successfully.")
         except Error as e:
             print(f"Error executing query: {e}")
-            self.connection.rollback()
+            self.__connection.rollback()
         finally:
             cursor.close()
 
-    def fetch_query(self, query, params=None):
+
+    def fetch_query(self, sql: str, value) -> None:
         """Execute a SELECT query and return results."""
-        if self.connection is None or not self.connection.is_connected():
+        if self.__connection is None or not self.__connection.is_connected():
             print("Connection is not established.")
             return None
 
-        cursor = self.connection.cursor()
+        cursor = self.__connection.cursor()
         try:
-            cursor.execute(query, params)
+            cursor.execute(sql, value)
             results = cursor.fetchall()
             return results
         except Error as e:
@@ -59,30 +76,65 @@ class SQLConnector:
         finally:
             cursor.close()
     
-    def add_guest(self, username: str, firstname: str, lastname: str, email: str, phone: str, address: str, birthday: str):
-        self.connect()
+    def add_guest(self, guest_info):
+        """ this will add the guest information into the guest table of the database hotel_reservation """
         
+        username = guest_info["username"]
+        firstname = guest_info["firstname"]
+        lastname = guest_info["lastname"]
+        email = guest_info["email"]
+        phone = guest_info["phone"]
+        address = guest_info["address"]
+        birthday = guest_info["birthday"]
+        
+        self.__connect_db()
         try:
             sql = """
                 INSERT INTO guest (username, firstname, lastname, email, phone, address, birthday)
                 VALUES (%s, %s, %s, %s, %s, %s, %s);
             """
-            params = (username, firstname, lastname, email, phone, address, birthday)
-            self.execute_query(sql, params)
+            value = (username, firstname, lastname, email, phone, address, birthday)
+            self.execute_query(sql, value)
         except Exception as e:
-            print("bfhdsjf;orkf")
+            print(f"Insertion error: {e}")
         
         finally:    
-            self.close_connection()
-            print("its addeed")
+            self.__disconnect_db()
+            print("data has been addeed")
+    
+    
+    
+'''
+class Database:
+    def __init__(self, host: str, user: str, password: str, database: str):
+        self.__host = host
+        self.__user = user
+        self.__passwd = password
+        self.__database = database
+        
+        self.connection = None
 
-
+    def connect(self):
+        """Establish a connection to the database."""
+        try:
+            print("try to connect")
+            self.connection = mysql.connector.connect(
+                host= self.__host,
+                user= self.__user,
+                passwd= self.__passwd,
+                database= self.__database
+            )
+            if self.connection.is_connected():
+                print("Connection to the database was successful.")
+        except Error as e:
+            print(f"Error while connecting to the database: {e}")
+            
     def close_connection(self):
         """Close the database connection."""
         if self.connection is not None and self.connection.is_connected():
             self.connection.close()
             print("Database connection closed.")
-
+'''
 
 
 def test_database_connection():
@@ -107,6 +159,7 @@ if __name__ == "__main__":
 
     # Connect to the database
     db.connect()
+
 
     # Insert example
     #insert_query = "INSERT INTO guest (username, firstname, lastname) VALUES (%s, %s, %s)"
