@@ -259,8 +259,3 @@ class Landing(QWidget):
     def signUp_button_clicked(self):
         self.hide()
         self.sign_up_page.show()
-
-
-
-
-
