@@ -10,7 +10,7 @@ class Landing(QWidget):
         self.settings()
         self.initUI()
 
-    def initUI(self):
+    def initUI(self) -> None:
         main_layout = QVBoxLayout() # where landing page scroll area is attached
         
         landing_page_scroll_area = self.scroll_area() # where you scroll through the landing page content
@@ -136,7 +136,7 @@ class Landing(QWidget):
         return r0w3
     
     # -- windows settings -- #
-    def settings(self):
+    def settings(self) -> None:
         """ settings of the landing page window """
         
         self.setWindowTitle("zrsmyley--Landing Page")
@@ -252,10 +252,10 @@ class Landing(QWidget):
         return this_button
 
     # -- buttons clicked -- #
-    def login_button_clicked(self):
+    def login_button_clicked(self) -> None:
         self.hide()
         self.login_page.show()
         
-    def signUp_button_clicked(self):
+    def signUp_button_clicked(self) -> None:
         self.hide()
         self.sign_up_page.show()
